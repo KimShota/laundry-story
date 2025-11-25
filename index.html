@@ -13,19 +13,184 @@
     <meta property="og:title" content="Laundry Guide - Interactive Learning" />
     <meta property="og:description" content="Learn proper laundry etiquette through an interactive video experience" />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
 
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@Lovable" />
-    <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
     
     <link rel="stylesheet" href="style.css" />
   </head>
 
   <body>
-    <div id="root"></div>
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Navigation -->
+    <nav class="nav" id="navigation" style="display: none;">
+      <div class="nav-container">
+        <div class="nav-brand">
+          <h1 class="nav-title">Laundry Adventure</h1>
+        </div>
+        <div class="nav-items">
+          <button class="nav-button" data-path="/">Home</button>
+          <button class="nav-button" data-path="/video">Video</button>
+          <button class="nav-button" data-path="/bts">BTS</button>
+          <button class="nav-button" data-path="/team">Team</button>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Index Page -->
+    <div class="index-page-fullscreen" id="index-page" style="display: none;">
+      <div class="laundry-background"></div>
+      <!-- Audio elements for home page -->
+      <audio id="laundry-audio" loop>
+        <source src="Media/laundry-75135.mp3" type="audio/mpeg">
+      </audio>
+      <audio id="door-audio">
+        <source src="Media/opening-door-411632.mp3" type="audio/mpeg">
+      </audio>
+      <div class="washing-machine-container-fullscreen">
+        <div class="washing-machine-large shake">
+          <div class="washing-machine-body"></div>
+          <div class="control-panel">
+            <div class="control-button"></div>
+            <div class="control-button"></div>
+            <div class="control-button"></div>
+          </div>
+          <div class="door-frame-large">
+            <button class="door-glass-large" id="door-button">
+              <div class="door-border-outer"></div>
+              <div class="door-border-inner"></div>
+              <div class="door-text-container" id="door-text-container">
+                <span class="door-text">Grab your laundry</span>
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Video Page -->
+    <div class="page-container" id="video-page" style="display: none;">
+      <div class="video-content">
+        <div class="video-container">
+          <div class="video-wrapper">
+            <video class="video-player" id="video-player" style="display: none;"></video>
+            <iframe id="video-iframe" style="display: none;" width="100%" height="100%" allow="autoplay" frameborder="0"></iframe>
+          </div>
+          <div class="choices-overlay" id="choices-overlay" style="display: none;">
+            <div class="choices-grid fade-in" id="choices-grid">
+              <!-- Choices will be dynamically generated here -->
+            </div>
+          </div>
+          <div class="video-controls">
+            <button id="back-button" class="video-control-button">Back</button>
+            <button id="continue-button" class="video-control-button">Continue</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Warning Page -->
+    <div class="warning-page" id="warning-page" style="display: none;">
+      <div class="warning-content fade-in">
+        <h1 class="warning-title">Do Not Do This!</h1>
+        <button class="warning-button" id="warning-back-button">Back to Video</button>
+      </div>
+    </div>
+
+    <!-- Success Page -->
+    <div class="success-page" id="success-page" style="display: none;">
+      <div class="success-content fade-in">
+        <h1 class="success-title">Good Job 👍</h1>
+        <p class="success-message">
+          You dealt with the situation very calmly and without causing any problems. Sometimes, you just need to let something go and hope for a better one.
+        </p>
+        <button class="success-button" id="restart-button">Restart the journey</button>
+      </div>
+    </div>
+
+    <!-- BTS Page -->
+    <div class="page-container" id="bts-page" style="display: none;">
+      <div class="bts-content">
+        <div class="bts-container">
+          <h2 class="bts-title">Behind the scene</h2>
+          <div class="video-wrapper">
+            <video class="video-player" controls>
+              <source src="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4" type="video/mp4">
+              Your browser does not support the video tag.
+            </video>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Team Page -->
+    <div class="page-container" id="team-page" style="display: none;">
+      <div class="team-content">
+        <div class="team-container">
+          <div class="team-header">
+            <h2 class="team-title">Team Members</h2>
+          </div>
+          <div class="team-grid">
+            <div class="team-member fade-in" style="animation-delay: 0s;">
+              <div class="team-member-avatar">
+                <svg class="team-member-icon" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"></path>
+                </svg>
+              </div>
+              <div class="team-member-info">
+                <h3 class="team-member-title">Shota</h3>
+                <p class="team-member-role">Web Developer & Main Actor</p>
+                <p class="team-member-description">Developed the web and acted as the main character</p>
+              </div>
+            </div>
+            <div class="team-member fade-in" style="animation-delay: 0.1s;">
+              <div class="team-member-avatar">
+                <svg class="team-member-icon" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"></path>
+                </svg>
+              </div>
+              <div class="team-member-info">
+                <h3 class="team-member-title">Darmen/h3>
+                <p class="team-member-role">Shooter & Sub Actor</p>
+                <p class="team-member-description">He filmed and acted at the same time</p>
+              </div>
+            </div>
+            <div class="team-member fade-in" style="animation-delay: 0.2s;">
+              <div class="team-member-avatar">
+                <svg class="team-member-icon" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"></path>
+                </svg>
+              </div>
+              <div class="team-member-info">
+                <h3 class="team-member-title">Jasmin</h3>
+                <p class="team-member-role">Executive Director</p>
+                <p class="team-member-description">Composed the script and filmed as a executive director</p>
+              </div>
+            </div>
+            <div class="team-member fade-in" style="animation-delay: 0.3s;">
+              <div class="team-member-avatar">
+                <svg class="team-member-icon" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"></path>
+                </svg>
+              </div>
+              <div class="team-member-info">
+                <h3 class="team-member-title">Hoor</h3>
+                <p class="team-member-role">Sound magician & Sub Director</p>
+                <p class="team-member-description">She recorded the audio and directed the filming</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NotFound Page -->
+    <div class="not-found-page" id="not-found-page" style="display: none;">
+      <div class="not-found-content">
+        <h1 class="not-found-title">404</h1>
+        <p class="not-found-text">Oops! Page not found</p>
+        <button class="not-found-link" id="not-found-link">Return to Home</button>
+      </div>
+    </div>
+
     <script src="script.js"></script>
   </body>
 </html>
