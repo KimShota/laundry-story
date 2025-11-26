@@ -1,4 +1,3 @@
-/* CSS Variables - Design System */
 :root {
   --background: 0 0% 8%;
   --foreground: 0 0% 90%;
@@ -35,14 +34,14 @@ body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  /* iPhone Safe Area Support */
+  /* iphone safe area */
   padding-top: env(safe-area-inset-top);
   padding-bottom: env(safe-area-inset-bottom);
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
-  /* Prevent iOS bounce scrolling */
+  /* prevent iOS bounce scrolling */
   overscroll-behavior: none;
-  /* Prevent text size adjustment on iOS */
+  /* prevent the text size adjustment on iOS */
   -webkit-text-size-adjust: 100%;
 }
 
@@ -120,7 +119,7 @@ body {
   background-color: hsl(var(--background));
 }
 
-/* Index Page - Fullscreen */
+/* Index Page when fullscreen */
 .index-page-fullscreen {
   position: fixed;
   inset: 0;
@@ -155,10 +154,12 @@ body {
     0 4px 12px rgba(0, 0, 0, 0.4),
     0 0 20px hsla(var(--destructive), 0.5),
     inset 0 1px 2px rgba(255, 255, 255, 0.1);
+  /* animation to fade in and out */
   animation: fadeInOut 3s ease-in-out forwards;
   transform-origin: center;
 }
 
+/* animation for fading in and out */
 @keyframes fadeInOut {
   0% {
     opacity: 0;
@@ -194,6 +195,7 @@ body {
   animation: backgroundShift 20s ease-in-out infinite;
 }
 
+/* animation for background shift */
 @keyframes backgroundShift {
   0%, 100% {
     background-position: 0 0, 20px 20px;
@@ -213,6 +215,7 @@ body {
   height: 100vh;
 }
 
+/* larger version of the washing machine */
 .washing-machine-large {
   position: relative;
   width: min(90vw, 90vh);
@@ -230,6 +233,7 @@ body {
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
+/* animation when hovering over  */
 .washing-machine-large:hover {
   transform: translateY(-5px);
   box-shadow: 
@@ -247,6 +251,7 @@ body {
   min-height: calc(100vh - 5rem);
 }
 
+/* regular size of washing machine */
 .washing-machine {
   position: relative;
   width: 600px;
@@ -257,6 +262,7 @@ body {
   overflow: hidden;
 }
 
+/* define the inside texture and shading of the machine */
 .washing-machine-body {
   position: absolute;
   inset: 0;
@@ -276,6 +282,7 @@ body {
     inset 0 -4px 20px rgba(0, 0, 0, 0.2);
 }
 
+/* top lighting highlight */
 .washing-machine-body::before {
   content: '';
   position: absolute;
@@ -287,6 +294,7 @@ body {
   border-radius: 1rem 1rem 0 0;
 }
 
+/* bottom shadow highlight */
 .washing-machine-body::after {
   content: '';
   position: absolute;
@@ -298,6 +306,7 @@ body {
   border-radius: 0 0 1rem 1rem;
 }
 
+/* control panel of the washing machine */
 .control-panel {
   position: absolute;
   top: 1.5rem;
@@ -329,6 +338,7 @@ body {
     0 3px 6px rgba(0, 0, 0, 0.3);
 }
 
+/* control buttons of the machine */
 .control-button {
   width: 2.5rem;
   height: 2.5rem;
@@ -354,6 +364,7 @@ body {
   box-shadow: 0 0 8px hsla(var(--foreground), 0.8);
 }
 
+/* effects on buttons when hovering */
 .control-button:hover {
   transform: scale(1.1);
   box-shadow: 
@@ -379,6 +390,7 @@ body {
   box-shadow: 0 0 12px hsla(var(--foreground), 0.8);
 }
 
+/* door frame of the machine */
 .door-frame {
   position: absolute;
   top: 8rem;
@@ -603,7 +615,7 @@ body {
   }
 }
 
-/* Shake Animation */
+/* shaking Animation */
 .shake {
   animation: shake 2s ease-in-out infinite;
 }
@@ -620,7 +632,7 @@ body {
   }
 }
 
-/* Fade In Animation */
+/* fade in animation */
 .fade-in {
   animation: fadeIn 0.3s ease-in;
 }
@@ -866,7 +878,7 @@ body {
 
 .choices-grid {
   display: grid;
-  grid-template-columns: 1fr; /* Default to vertical layout for mobile */
+  grid-template-columns: 1fr; /* vertical layout for mobile */
   gap: 2.5rem;
   width: 100%;
   max-width: 1200px;
@@ -1006,7 +1018,7 @@ body {
   color: hsl(var(--destructive-foreground));
 }
 
-/* Warning Page */
+/* warning page */
 .warning-page {
   min-height: 100vh;
   background-color: hsl(var(--destructive));
@@ -1221,35 +1233,35 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center; /* Center content vertically */
-  gap: 2rem; /* Increased gap between title and video */
-  padding: 2rem 1rem; /* Add padding around content */
+  justify-content: center; /* center the content vertically */
+  gap: 2rem; /* increase the gap between title and video */
+  padding: 2rem 1rem; /* add the padding around content */
 }
 
 .bts-title {
-  font-size: 2.5rem; /* Match team-title size */
-  font-weight: 700; /* Match team-title weight */
+  font-size: 2.5rem; 
+  font-weight: 700; 
   color: hsl(var(--foreground));
   margin: 0;
-  margin-bottom: 0.5rem; /* Add margin below title */
+  margin-bottom: 0.5rem;
   text-align: center;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
   flex-shrink: 0;
-  display: block; /* Ensure title is visible */
+  display: block;
 }
 
 .bts-container .video-wrapper {
   border: 2px solid hsl(var(--foreground));
   background-color: hsl(var(--card));
   position: relative;
-  width: 85%; /* Smaller width */
-  max-width: 900px; /* Smaller max-width */
-  flex: 0 1 auto; /* Changed from flex: 1 to allow title space */
+  width: 85%;
+  max-width: 900px; 
+  flex: 0 1 auto; 
   min-height: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-top: 0.5rem; /* Add margin above video */
+  margin-top: 0.5rem; 
 }
 
 .bts-container .video-player {
@@ -1453,8 +1465,7 @@ button:disabled {
 
 /* Responsive Design */
 
-/* Mobile First - Base styles are mobile */
-/* Tablet and up - Only apply horizontal layout for screens 640px and wider */
+/* Mobile: Base styles are mobile */
 @media (min-width: 640px) {
   .nav-container {
     padding: 1.25rem 2rem;
@@ -1488,7 +1499,7 @@ button:disabled {
   }
   
   .choices-grid {
-    grid-template-columns: repeat(2, 1fr); /* 2 columns for tablet */
+    grid-template-columns: repeat(2, 1fr); /* 2 columns for the tablet */
     gap: 2rem;
   }
 
@@ -1524,7 +1535,7 @@ button:disabled {
   }
 }
 
-/* Ensure mobile always uses vertical layout */
+/* make sure we always uses vertical layout for mobile */
 @media (max-width: 639px) {
   .choices-grid {
     grid-template-columns: 1fr !important;
@@ -1537,7 +1548,7 @@ button:disabled {
   }
 }
 
-/* Mobile - Small screens */
+/* Mobile: smaller screens */
 @media (max-width: 639px) {
   /* Navigation */
   .nav-container {
@@ -1570,12 +1581,12 @@ button:disabled {
     min-width: calc(50% - 0.25rem);
   }
 
-  /* Home Page - Washing Machine */
+  /* Home Page: Washing Machine */
   .washing-machine-large {
     width: min(95vw, 95vh);
-    height: min(110vw, 110vh); /* Expanded vertically */
+    height: min(110vw, 110vh); 
     max-width: 600px;
-    max-height: 700px; /* Increased max height */
+    max-height: 700px; 
     border-width: 4px;
   }
 
@@ -1585,7 +1596,7 @@ button:disabled {
     max-width: 450px;
     max-height: 450px;
     border-width: 4px;
-    top: 65%; /* Moved down to avoid overlap with control panel */
+    top: 65%; /* move down a bit to avoid overlap with control panel */
   }
 
   .door-glass-large {
@@ -1650,7 +1661,7 @@ button:disabled {
   /* Video Page */
   .video-content {
     top: auto;
-    top: calc(4.5rem + env(safe-area-inset-top)); /* Adjusted for smaller nav */
+    top: calc(4.5rem + env(safe-area-inset-top)); 
     padding-top: 1rem;
     padding-bottom: env(safe-area-inset-bottom);
     padding-left: env(safe-area-inset-left);
@@ -1700,7 +1711,7 @@ button:disabled {
   }
 
   .choices-grid {
-    grid-template-columns: 1fr !important; /* Force vertical layout on mobile */
+    grid-template-columns: 1fr !important; /* use vertical layout for mobile */
     gap: 1.5rem;
     padding: 0.5rem;
   }
@@ -1760,7 +1771,7 @@ button:disabled {
   /* BTS Page */
   .bts-content {
     top: auto;
-    top: calc(4.5rem + env(safe-area-inset-top)); /* Adjusted for smaller nav */
+    top: calc(4.5rem + env(safe-area-inset-top));
     padding: 1rem;
     padding-bottom: calc(1rem + env(safe-area-inset-bottom));
     padding-left: calc(1rem + env(safe-area-inset-left));
@@ -1768,23 +1779,23 @@ button:disabled {
   }
 
   .bts-container {
-    gap: 1.5rem; /* Increased gap between title and video */
-    padding: 1rem 0.5rem; /* Add padding around content */
-    justify-content: center; /* Center content vertically */
+    gap: 1.5rem; /* increase the gap between title and video */
+    padding: 1rem 0.5rem; 
+    justify-content: center; 
   }
 
   .bts-title {
-    font-size: 2rem; /* Match team-title mobile size */
-    display: block; /* Ensure title is visible */
-    margin-bottom: 0.5rem; /* Add margin below title */
+    font-size: 2rem; 
+    display: block; 
+    margin-bottom: 0.5rem;
   }
 
   .bts-container .video-wrapper {
-    width: 90%; /* Smaller width on mobile */
+    width: 90%; /* use smaller width on mobile */
     max-width: 100%;
     border-width: 2px;
-    flex: 0 1 auto; /* Allow title space */
-    margin-top: 0.5rem; /* Add margin above video */
+    flex: 0 1 auto; 
+    margin-top: 0.5rem;
   }
 
   /* Team Page */
@@ -1839,7 +1850,7 @@ button:disabled {
   }
 }
 
-/* Extra Small Mobile */
+/* Setting for extra smaller mobile */
 @media (max-width: 375px) {
   .nav-title {
     font-size: 1.125rem;
@@ -1878,7 +1889,7 @@ button:disabled {
   }
 
   .bts-title {
-    font-size: 1.75rem; /* Match team-title size for small screens */
+    font-size: 1.75rem;
   }
 
   .choice-button {
@@ -1887,7 +1898,7 @@ button:disabled {
   }
 }
 
-/* Landscape Mobile */
+/* landscape version of mobile */
 @media (max-width: 896px) and (orientation: landscape) {
   .video-content {
     padding-top: 0.5rem;
@@ -1918,7 +1929,7 @@ button:disabled {
   }
 }
 
-/* Large Desktop */
+/* Larger Desktop */
 @media (min-width: 1440px) {
   .nav-container {
     max-width: 1400px;
@@ -1941,7 +1952,7 @@ button:disabled {
   }
 }
 
-/* Touch Device Optimizations */
+/* optimizations for touch devices*/
 @media (hover: none) and (pointer: coarse) {
   .nav-button,
   .video-control-button,
@@ -1964,28 +1975,25 @@ button:disabled {
   }
 }
 
-/* iPhone Specific Optimizations */
 @supports (-webkit-touch-callout: none) {
-  /* iOS Safari specific styles */
   html {
-    /* Prevent iOS Safari bounce scrolling */
+    /* prevent the iOS Safari bounce scrolling effects */
     overscroll-behavior: none;
     -webkit-overflow-scrolling: touch;
   }
 
   body {
-    /* Smooth scrolling on iOS */
+    /* apply smooth scrolling on iOS */
     -webkit-overflow-scrolling: touch;
   }
 
   .index-page-fullscreen,
   .page-container {
-    /* Allow scrolling within pages on iOS */
+    /* allow scrolling within the pages on iOS */
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
   }
 
-  /* Improve touch targets for iPhone */
   .nav-button,
   .video-control-button,
   .choice-button,
@@ -1997,18 +2005,18 @@ button:disabled {
     touch-action: manipulation;
   }
 
-  /* Fix for iPhone X and newer safe areas */
+  /* fixes for iPhone X and newer safe areas */
   @media screen and (max-width: 428px) {
     .washing-machine-large {
       width: min(90vw, 90vh);
-      height: min(108vw, 108vh); /* Expanded vertically */
+      height: min(108vw, 108vh);
       max-height: 700px;
     }
 
     .door-frame-large {
       width: min(70vw, 70vh);
       height: min(70vw, 70vh);
-      top: 65%; /* Moved down to avoid overlap */
+      top: 65%; 
     }
 
     .floating-text {
@@ -2046,18 +2054,18 @@ button:disabled {
     }
   }
 
-  /* iPhone SE and smaller */
+  /* settings for iPhone SE and smaller models */
   @media screen and (max-width: 375px) {
     .washing-machine-large {
       width: min(92vw, 92vh);
-      height: min(108vw, 108vh); /* Expanded vertically */
+      height: min(108vw, 108vh); 
       max-height: 680px;
     }
 
     .door-frame-large {
       width: min(72vw, 72vh);
       height: min(72vw, 72vh);
-      top: 66%; /* Moved down to avoid overlap */
+      top: 66%; 
     }
 
     .control-panel {
@@ -2079,7 +2087,7 @@ button:disabled {
     }
   }
 
-  /* iPhone landscape orientation */
+  /* orientations for iPhone landscape */
   @media screen and (max-width: 896px) and (orientation: landscape) {
     .washing-machine-large {
       width: min(60vw, 60vh);
