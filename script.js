@@ -1,14 +1,14 @@
-// Simple routing system
+// create routing system
 const validRoutes = ['/', '/video', '/warning', '/success', '/bts', '/team'];
 let currentPath = window.location.pathname || '/';
 
-// Validate initial path and redirect to home if invalid
+// validate the initial path and redirect users to home if it is invalid
 if (!validRoutes.includes(currentPath)) {
   currentPath = '/';
   window.history.replaceState({}, '', '/');
 }
 
-// Page elements
+// create page elements
 const pages = {
   '/': document.getElementById('index-page'),
   '/video': document.getElementById('video-page'),
@@ -18,7 +18,7 @@ const pages = {
   '/team': document.getElementById('team-page'),
 };
 
-// Navigation
+// create navigation
 const navButtons = document.querySelectorAll('.nav-button');
 const navigation = document.getElementById('navigation');
 
@@ -29,21 +29,21 @@ function navigate(path) {
 }
 
 function showPage(path) {
-  // Track previous path to detect navigation from non-video pages
+  //track the previous path to detect the navigation
   const previousPath = currentPath;
   
-  // Hide all pages
+  // hide all the pages
   Object.values(pages).forEach(page => {
     if (page) page.style.display = 'none';
   });
 
-  // Show current page
+  // show the current page
   const currentPage = pages[path] || pages['/'];
   if (currentPage) {
     currentPage.style.display = '';
   }
 
-  // Update navigation buttons
+  // update the navigation buttons 
   navButtons.forEach(button => {
     const buttonPath = button.getAttribute('data-path');
     if (buttonPath === path) {
@@ -55,96 +55,92 @@ function showPage(path) {
     }
   });
 
-  // Show/hide navigation based on page
+  // show or hide navigation based on pages 
   if (path === '/' || path === '/warning' || path === '/success') {
     navigation.style.display = 'none';
   } else {
     navigation.style.display = '';
   }
 
-  // Stop all videos when leaving video page
+  // stop all the videos being played when user leave video page
   if (path !== '/video') {
-    // Stop video player
+    // stop the video player
     const videoPlayer = document.getElementById('video-player');
     if (videoPlayer) {
       videoPlayer.pause();
-      videoPlayer.currentTime = 0;
+      videoPlayer.currentTime = 0; //set the current time to 0
       videoPlayer.src = '';
     }
     
-    // Stop iframe video by removing src
+    // stop the video by removing src
     const videoIframe = document.getElementById('video-iframe');
     if (videoIframe) {
       videoIframe.src = '';
       videoIframe.removeAttribute('src');
     }
     
-    // Clean up video end handler
+    // clean up the video end hanlder 
     if (videoEndHandler) {
       window.removeEventListener('message', videoEndHandler);
       videoEndHandler = null;
     }
     
+    // create the continue button
     const continueButton = document.getElementById('continue-button');
     if (continueButton) {
       continueButton.style.display = 'none';
     }
   }
   
-  // Stop all audio when leaving home page
+  // stop all the audio when user leave the home page
   const laundryAudio = document.getElementById('laundry-audio');
   const doorAudio = document.getElementById('door-audio');
-  if (laundryAudio) {
+  if (laundryAudio) { //laundry audio
     laundryAudio.pause();
     laundryAudio.currentTime = 0;
   }
-  if (doorAudio) {
+  if (doorAudio) { //door audio
     doorAudio.pause();
     doorAudio.currentTime = 0;
   }
   
-  // Reset everything when going to home page
+  //reset everything when user go back to home page
   if (path === '/') {
     resetVideoState();
-    cleanupFloatingTexts(); // Clean up any existing floating texts before initializing
+    cleanupFloatingTexts(); // clean up any text floating
     initIndexPage();
   } else {
-    // Clean up floating texts when leaving home page
+    // clean up floating texts
     cleanupFloatingTexts();
     
     if (path === '/video') {
-      // Always reset to main video if coming from any page other than /video itself
-      // This ensures video always starts from the beginning when navigating from any other page
+      // always reset to the main video when coming from any page
       if (previousPath !== '/video') {
-        // Coming from any other page - always reset to main video
         resetVideoState();
-        // Explicitly clear choice video state to prevent resuming
         isPlayingChoiceVideo = false;
         selectedChoice = null;
         navigationHistory.push('main-video');
       } else if (navigationHistory.length === 0 || !navigationHistory.includes('main-video')) {
-        // Fresh start or no main-video in history - reset everything
+        // reset everything when there is nothing
         resetVideoState();
-        // Explicitly clear choice video state to prevent resuming
+        // clear the choice video state
         isPlayingChoiceVideo = false;
         selectedChoice = null;
         navigationHistory.push('main-video');
       }
-      // If previousPath is '/video', we're staying on the video page, so preserve state
       initVideoPage();
     } else if (path === '/bts') {
-      // Setup fullscreen button for BTS page
+      // enable the fullscreen button
       setupBtsFullscreenButton();
     } else if (path === '/success') {
-      // Clear navigation history when reaching success page
-      // This ensures a fresh start when going back to home
+      //clear the navigation history
       navigationHistory = [];
       isPlayingChoiceVideo = false;
       selectedChoice = null;
     }
   }
   
-  // Update current path
+  // update the current path
   currentPath = path;
 }
 
@@ -159,9 +155,9 @@ window.addEventListener('popstate', () => {
   showPage(currentPath);
 });
 
-// Index page functionality
+// index page 
 let floatingTextInterval = null;
-let floatingTextTimeouts = []; // Track all timeouts for cleanup
+let floatingTextTimeouts = []; //track the timeouts
 let isDoorOpening = false;
 
 function cleanupFloatingTexts() {
@@ -171,29 +167,30 @@ function cleanupFloatingTexts() {
     floatingTextInterval = null;
   }
   
-  // Clear all timeouts
+  // clear all the timeouts 
   floatingTextTimeouts.forEach(timeout => clearTimeout(timeout));
   floatingTextTimeouts = [];
   
-  // Remove all existing floating texts
+  // remove all the texts
   const existingTexts = document.querySelectorAll('.floating-text');
   existingTexts.forEach(text => text.remove());
 }
 
 function initIndexPage() {
-  // Clean up any existing floating texts first
+  // clean any texts 
   cleanupFloatingTexts();
 
-  // Play laundry audio on home page
+  // play laundry audio
   const laundryAudio = document.getElementById('laundry-audio');
   if (laundryAudio) {
     laundryAudio.currentTime = 0;
+    //catch error
     laundryAudio.play().catch(err => {
-      // Handle autoplay restrictions
       console.log('Audio autoplay prevented:', err);
     });
   }
 
+  //list of messages
   const messages = [
     'Where are my socks?',
     'Who touched my laundry?',
@@ -205,28 +202,30 @@ function initIndexPage() {
     const createFloatingText = () => {
       const message = messages[Math.floor(Math.random() * messages.length)];
       
-      // Calculate washing machine position (centered, max 800px)
+      // calculate the location of washing machine 
       const machineSize = Math.min(window.innerWidth * 0.9, window.innerHeight * 0.9, 800);
       const machineLeft = (window.innerWidth - machineSize) / 2;
       const machineTop = (window.innerHeight - machineSize) / 2;
       const machineRight = machineLeft + machineSize;
       const machineBottom = machineTop + machineSize;
       
-      // Add padding around machine to avoid overlap
+      // add the padding around the machine to avoid overlap
       const padding = 80;
       const safeLeft = machineLeft - padding;
       const safeTop = machineTop - padding;
       const safeRight = machineRight + padding;
       const safeBottom = machineBottom + padding;
       
-      // Estimate text width (rough calculation)
+      // calculate the text width
     const textWidth = message.length * 12 + 50;
       const textHeight = 60;
       
+      //set variables 
       let x, y;
       let attempts = 0;
       const maxAttempts = 100;
       
+      //place floating text on the screen while avoiding overlap
       do {
         x = Math.random() * (window.innerWidth - textWidth - 40) + 20;
         y = Math.random() * (window.innerHeight - textHeight - 40) + 20;
@@ -242,6 +241,7 @@ function initIndexPage() {
         if (!overlaps) break;
       } while (attempts < maxAttempts);
       
+      //handle if random placements failed many times
       if (attempts >= maxAttempts) {
         const corners = [
           { x: 20, y: 20 },
@@ -264,10 +264,10 @@ function initIndexPage() {
     if (indexPage) {
       indexPage.appendChild(textElement);
       
-      // Track timeout for cleanup
+      // track the timeout for cleaning up
       const timeout = setTimeout(() => {
         textElement.remove();
-        // Remove from tracking array
+        // remove from the tracking array
         const index = floatingTextTimeouts.indexOf(timeout);
         if (index > -1) {
           floatingTextTimeouts.splice(index, 1);
@@ -277,16 +277,16 @@ function initIndexPage() {
     }
     };
 
-  // Create initial text
+  // create the initial text
   const initialTimeout = setTimeout(() => {
       createFloatingText();
     }, 500);
   floatingTextTimeouts.push(initialTimeout);
     
-    // Create texts periodically
+  // create texts over time 
   floatingTextInterval = setInterval(createFloatingText, 3500);
 
-  // Reset door state
+  // reset the door state 
   isDoorOpening = false;
   const doorButton = document.getElementById('door-button');
   const doorTextContainer = document.getElementById('door-text-container');
@@ -298,9 +298,10 @@ function initIndexPage() {
   }
 }
 
-// Door click handler
+// handle the door click
 const doorButton = document.getElementById('door-button');
 if (doorButton) {
+  //listen to clicking
   doorButton.addEventListener('click', () => {
     if (!isDoorOpening) {
       isDoorOpening = true;
@@ -309,8 +310,8 @@ if (doorButton) {
       if (doorTextContainer) {
         doorTextContainer.style.display = 'none';
       }
-      
-      // Play door opening audio immediately
+
+      // play door opening audio
       const doorAudio = document.getElementById('door-audio');
       if (doorAudio) {
         doorAudio.currentTime = 0;
@@ -326,13 +327,13 @@ if (doorButton) {
   });
 }
 
-// Video page functionality
+// video page functionality
 let currentVideoIndex = 0;
 const videos = [
   { type: 'iframe', src: 'https://drive.google.com/file/d/1tXRuomBFox5A2s3Lv0WzmuEhNfbrmhKu/preview' },
 ];
 
-// All available choices
+// set all available choices
 const allChoices = [
   { 
     optionLabel: 'Option 1', 
@@ -354,45 +355,39 @@ const allChoices = [
   },
 ];
 
-// Choice levels - defines which choices are correct at each level
+// define the correct index
 const choiceLevels = [
-  // Level 1: Option 3 (Let it go) is correct
   { correctIndex: 2 },
-  // Level 2: Option 3 (Let it go) is correct
   { correctIndex: 2 },
-  // Level 3: Option 3 (Let it go) is correct
   { correctIndex: 2 },
 ];
 
-// State tracking
+// track the state
 let currentChoiceLevel = 0;
 let selectedChoice = null;
 let isPlayingChoiceVideo = false;
-let selectedChoices = []; // Track which choices have been selected
+let selectedChoices = [];
 
-// Navigation history stack: tracks the sequence of pages/states
+// track the sequence of pages 
 let navigationHistory = [];
 
-// Global variable to track video end detection
 let videoEndHandler = null;
 
-// Reset all video-related state
+// reset all the states 
 function resetVideoState() {
-  // Reset all state variables
   currentChoiceLevel = 0;
   selectedChoice = null;
   isPlayingChoiceVideo = false;
   navigationHistory = [];
   currentVideoIndex = 0;
-  selectedChoices = []; // Reset selected choices
+  selectedChoices = []; // reset the selected choices
   
-  // Clean up video end handler
   if (videoEndHandler) {
     window.removeEventListener('message', videoEndHandler);
     videoEndHandler = null;
   }
   
-  // Reset video elements
+  // reset the video elements
   const videoIframe = document.getElementById('video-iframe');
   const videoPlayer = document.getElementById('video-player');
   const choicesOverlay = document.getElementById('choices-overlay');
@@ -430,35 +425,32 @@ function resetVideoState() {
   }
 }
 
-// Go back to previous state
+// go back to previous state
 function goBack() {
   if (navigationHistory.length <= 1) {
-    // If we're at the start, go to home
     navigate('/');
     return;
   }
   
-  // Remove current state
+  // remove the current state
   navigationHistory.pop();
   
-  // Get previous state
+  // get the previous state
   const previousState = navigationHistory[navigationHistory.length - 1];
   
   if (previousState === 'main-video') {
-    // Go back to main video
+    // go back to the main video 
     isPlayingChoiceVideo = false;
     selectedChoice = null;
-    // Don't re-initialize navigation history, it's already set
     initVideoPage();
   } else if (previousState && previousState.startsWith('choices-')) {
-    // Go back to choices - restore without adding to history again
+    // go back to choices
     const levelIndex = parseInt(previousState.split('-')[1]);
     isPlayingChoiceVideo = false;
     selectedChoice = null;
     showChoicesWithoutHistoryUpdate(levelIndex);
   } else if (previousState === 'choice-video') {
-    // Go back from choice video to the choices that led to it
-    // Need to go back one more step to get the choices state
+    // go back from choice video to the choices 
     if (navigationHistory.length > 1) {
       navigationHistory.pop();
       const choicesState = navigationHistory[navigationHistory.length - 1];
@@ -474,7 +466,7 @@ function goBack() {
       navigate('/');
     }
   } else {
-    // Fallback: go to home
+    //go back to home
     navigate('/');
   }
 }
@@ -486,22 +478,17 @@ function initVideoPage() {
   const continueButton = document.getElementById('continue-button');
   const backButton = document.getElementById('back-button');
   
-  // First, check if we just reset (navigationHistory only has 'main-video')
-  // If so, always show main video and ignore any choice video state
+  // check if we just reset or not
   const isJustReset = navigationHistory.length === 1 && navigationHistory[0] === 'main-video';
   
   if (isJustReset) {
-    // We just reset, so force clear choice video state and show main video
+    //clear video states and show main video
     isPlayingChoiceVideo = false;
     selectedChoice = null;
     } else {
-    // Check if we should resume a choice video
-    // Only resume if:
-    // 1. Navigation history has more than just 'main-video' (we're in the middle of a flow)
-    // 2. The last state in history is 'choice-video' (we were watching a choice video)
-    // 3. We have valid choice video state
+    // check if we should resume a choice video or not
     const shouldResumeChoiceVideo = 
-      navigationHistory.length > 1 && 
+      navigationHistory.length > 1 && //navigation history needs to have more than main video
       navigationHistory[navigationHistory.length - 1] === 'choice-video' &&
       isPlayingChoiceVideo && 
       selectedChoice &&
@@ -513,24 +500,23 @@ function initVideoPage() {
       return;
     }
     
-    // If we're here but not in reset state, still clear choice video state
-    // This handles edge cases where state might be inconsistent
+    // clear video states 
     isPlayingChoiceVideo = false;
     selectedChoice = null;
   }
   
-  // Reset choices overlay
+  // reset choice overlay
   if (choicesOverlay) {
     choicesOverlay.style.display = 'none';
   }
   
-  // Clean up previous video end handler
+  // clean up previous video end handler
   if (videoEndHandler) {
     window.removeEventListener('message', videoEndHandler);
     videoEndHandler = null;
   }
   
-  // Explicitly reset video elements to ensure clean state
+  //reste the video elemetns to make sure the clean state
   if (videoIframe) {
     videoIframe.style.display = 'none';
     videoIframe.src = '';
@@ -544,20 +530,20 @@ function initVideoPage() {
     videoPlayer.load();
   }
   
-  // Show video wrapper
+  // show the video wrapper
   const videoWrapper = document.querySelector('.video-wrapper');
   if (videoWrapper) {
     videoWrapper.style.display = 'flex';
   }
   
-  // Setup fullscreen button
+  // set up fullscreen button
   setupFullscreenButton();
   
-  // Play main video
+  // play main video 
   const currentVideo = videos[currentVideoIndex];
   
   if (currentVideo.type === 'iframe') {
-    // Show iframe, hide video player
+    // show iframe and hide video player
     if (videoIframe) {
       videoIframe.style.display = 'block';
       videoIframe.src = currentVideo.src;
@@ -566,17 +552,17 @@ function initVideoPage() {
       videoPlayer.style.display = 'none';
     }
     
-    // Show buttons
+    // show buttons
     if (continueButton) continueButton.style.display = 'block';
     if (backButton) backButton.style.display = 'block';
     
-    // Setup continue button to show choices
+    // enable continue button to show choices
     if (continueButton) {
-      // Remove all existing event listeners by cloning the button
+      // remove all  event listeners
       const newContinueButton = continueButton.cloneNode(true);
       continueButton.parentNode?.replaceChild(newContinueButton, continueButton);
       
-      // Get the new button reference
+      // get the new button reference
       const freshContinueButton = document.getElementById('continue-button');
       if (freshContinueButton) {
         const handleContinueClick = () => {
@@ -587,7 +573,7 @@ function initVideoPage() {
       }
     }
     
-    // Setup back button
+    // enable the back button
     if (backButton) {
       const handleBackClick = () => {
         goBack();
@@ -596,7 +582,7 @@ function initVideoPage() {
       backButton.addEventListener('click', handleBackClick);
     }
   } else {
-    // Show video player, hide iframe
+    // show the video player
     if (videoPlayer) {
       videoPlayer.style.display = 'block';
       videoPlayer.src = currentVideo.src;
@@ -616,13 +602,14 @@ function initVideoPage() {
 function showChoices(levelIndex) {
   showChoicesWithoutHistoryUpdate(levelIndex);
   
-  // Update navigation history only when not going back
+  // update navigation history only when user is not going back 
   const stateKey = `choices-${levelIndex}`;
   if (navigationHistory[navigationHistory.length - 1] !== stateKey) {
     navigationHistory.push(stateKey);
   }
 }
 
+// show three choices 
 function showChoicesWithoutHistoryUpdate(levelIndex) {
   const choicesOverlay = document.getElementById('choices-overlay');
   const choicesGrid = document.getElementById('choices-grid');
@@ -637,18 +624,18 @@ function showChoicesWithoutHistoryUpdate(levelIndex) {
   
   currentChoiceLevel = levelIndex;
   
-  // Filter out already selected choices
+  // filter out selected choices
   const availableChoices = allChoices.filter((choice, index) => {
-    // Check if this choice has been selected before
+    // check if this choice has been selected before
     return !selectedChoices.some(selected => 
       selected.title === choice.title && selected.video.src === choice.video.src
     );
   });
   
-  // If no choices available, show all (shouldn't happen, but safety check)
+  // show all if no choice is available
   const choices = availableChoices.length > 0 ? availableChoices : allChoices;
   
-  // Stop current video before showing choices
+  // stop the current video 
   const videoPlayer = document.getElementById('video-player');
   const videoIframe = document.getElementById('video-iframe');
   
@@ -662,24 +649,24 @@ function showChoicesWithoutHistoryUpdate(levelIndex) {
     videoIframe.removeAttribute('src');
   }
   
-  // Hide video and buttons
+  // hide the video and buttons
   if (videoWrapper) videoWrapper.style.display = 'none';
   if (continueButton) continueButton.style.display = 'none';
   if (backButton) {
     backButton.style.display = 'none';
   }
   
-  // Show choices overlay
+  // show the choices overlay
   if (choicesOverlay) {
     choicesOverlay.style.display = 'flex';
   }
   
-  // Clear and populate choices
+  // clear and populate choices
   choicesGrid.innerHTML = '';
   choicesGrid.style.gridTemplateColumns = `repeat(${choices.length}, minmax(200px, 1fr))`;
   
   choices.forEach((choice, index) => {
-    // Find the original index in allChoices to check if it's correct
+    // find the original index in allChoices
     const originalIndex = allChoices.findIndex(c => 
       c.title === choice.title && c.video.src === choice.video.src
     );
@@ -701,7 +688,7 @@ function showChoicesWithoutHistoryUpdate(levelIndex) {
 }
 
 function handleChoiceSelection(choice, levelIndex) {
-  // Stop current video before playing new one
+  // stop the current video before playing a new one
   const videoPlayer = document.getElementById('video-player');
   const videoIframe = document.getElementById('video-iframe');
   
@@ -718,22 +705,22 @@ function handleChoiceSelection(choice, levelIndex) {
   selectedChoice = { choice, levelIndex };
   isPlayingChoiceVideo = true;
   
-  // Add to selected choices list (to exclude from next level)
+  // add to the selected choices list 
   selectedChoices.push({
     title: choice.title,
     video: choice.video
   });
   
-  // Update navigation history
+  // update navigation history
   navigationHistory.push('choice-video');
   
-  // Hide choices
+  // hide choices
   const choicesOverlay = document.getElementById('choices-overlay');
   if (choicesOverlay) {
     choicesOverlay.style.display = 'none';
   }
   
-  // Play the selected video
+  // play the selected video
   playChoiceVideo(choice, levelIndex);
 }
 
@@ -744,17 +731,17 @@ function playChoiceVideo(choice, levelIndex) {
   const continueButton = document.getElementById('continue-button');
   const backButton = document.getElementById('back-button');
   
-  // Show video wrapper
+  // show the video wrapper
   if (videoWrapper) videoWrapper.style.display = 'flex';
   
-  // Setup fullscreen button
+  // enable the fullscreen button
   setupFullscreenButton();
   
-  // Show continue button, hide back button for choice videos
+  // show continue button and hide back button 
   if (continueButton) continueButton.style.display = 'block';
   if (backButton) backButton.style.display = 'none';
   
-  // Play video
+  // play the video
   if (choice.video.type === 'iframe') {
     if (videoIframe) {
       videoIframe.style.display = 'block';
@@ -774,26 +761,26 @@ function playChoiceVideo(choice, levelIndex) {
     }
   }
   
-  // Setup continue button - remove all existing listeners first
+  // enable the continue button 
   if (continueButton) {
-    // Remove all existing event listeners by cloning the button
+    // remove all event listeners
     const newContinueButton = continueButton.cloneNode(true);
     continueButton.parentNode?.replaceChild(newContinueButton, continueButton);
     
-    // Get the new button reference
+    // get the new button reference
     const freshContinueButton = document.getElementById('continue-button');
     if (freshContinueButton) {
       const handleContinueAfterChoice = () => {
         if (choice.isCorrect) {
-          // Correct choice - go to success page
+          // go to success page 
           navigate('/success');
         } else {
-          // Wrong choice - show next level of choices
+          // show next level of choices
           const nextLevel = levelIndex + 1;
           if (nextLevel < choiceLevels.length) {
             showChoices(nextLevel);
           } else {
-            // No more levels, go to success anyway
+            // go to success if no more choices
             navigate('/success');
           }
         }
@@ -803,9 +790,7 @@ function playChoiceVideo(choice, levelIndex) {
   }
 }
 
-// Choice buttons are now handled dynamically in showChoices function
-
-// Warning page button
+// warning page button
 const warningBackButton = document.getElementById('warning-back-button');
 if (warningBackButton) {
   warningBackButton.addEventListener('click', () => {
@@ -813,11 +798,11 @@ if (warningBackButton) {
   });
 }
 
-// Success page button - restart the journey
+// Success page button
 const restartButton = document.getElementById('restart-button');
 if (restartButton) {
   restartButton.addEventListener('click', () => {
-    // Reset everything and go to home
+    //reset everything and go back to home
     resetVideoState();
     navigate('/');
   });
@@ -839,14 +824,14 @@ if (notFoundLink) {
   });
 }
 
-// Fullscreen functionality
+// enable fullscreen functionality
 function setupFullscreenButton() {
   const fullscreenButton = document.getElementById('fullscreen-button');
   const videoWrapper = document.getElementById('video-wrapper') || document.querySelector('.video-wrapper');
   
   if (!fullscreenButton || !videoWrapper) return;
   
-  // Remove existing event listeners
+  // remove event listeners
   const newButton = fullscreenButton.cloneNode(true);
   fullscreenButton.parentNode?.replaceChild(newButton, fullscreenButton);
   
@@ -856,7 +841,7 @@ function setupFullscreenButton() {
   freshButton.addEventListener('click', async () => {
     try {
       if (!document.fullscreenElement) {
-        // Enter fullscreen
+        // enter the fullscreen
         if (videoWrapper.requestFullscreen) {
           await videoWrapper.requestFullscreen();
         } else if (videoWrapper.webkitRequestFullscreen) {
@@ -865,7 +850,7 @@ function setupFullscreenButton() {
           await videoWrapper.msRequestFullscreen();
         }
       } else {
-        // Exit fullscreen
+        // exit the fullscreen
         if (document.exitFullscreen) {
           await document.exitFullscreen();
         } else if (document.webkitExitFullscreen) {
@@ -879,18 +864,18 @@ function setupFullscreenButton() {
     }
   });
   
-  // Update button icon based on fullscreen state
+  // update the button icon based upon fullscreen state
   const updateFullscreenIcon = () => {
     const isFullscreen = !!document.fullscreenElement;
     const svg = freshButton.querySelector('svg');
     if (svg) {
       if (isFullscreen) {
-        // Exit fullscreen icon
+        // exist the fullscreen icon
         svg.innerHTML = `
           <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>
         `;
       } else {
-        // Enter fullscreen icon
+        // enter the fullscreen icon
         svg.innerHTML = `
           <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
         `;
@@ -898,7 +883,7 @@ function setupFullscreenButton() {
     }
   };
   
-  // Listen for fullscreen changes
+  // listen for fullscreen changes
   document.addEventListener('fullscreenchange', updateFullscreenIcon);
   document.addEventListener('webkitfullscreenchange', updateFullscreenIcon);
   document.addEventListener('msfullscreenchange', updateFullscreenIcon);
@@ -910,7 +895,7 @@ function setupBtsFullscreenButton() {
   
   if (!fullscreenButton || !videoWrapper) return;
   
-  // Remove existing event listeners
+  // remove event listeners
   const newButton = fullscreenButton.cloneNode(true);
   fullscreenButton.parentNode?.replaceChild(newButton, fullscreenButton);
   
@@ -920,7 +905,7 @@ function setupBtsFullscreenButton() {
   freshButton.addEventListener('click', async () => {
     try {
       if (!document.fullscreenElement) {
-        // Enter fullscreen
+        // enter the fullscreen
         if (videoWrapper.requestFullscreen) {
           await videoWrapper.requestFullscreen();
         } else if (videoWrapper.webkitRequestFullscreen) {
@@ -929,7 +914,7 @@ function setupBtsFullscreenButton() {
           await videoWrapper.msRequestFullscreen();
         }
       } else {
-        // Exit fullscreen
+        // exit the fullscreen
         if (document.exitFullscreen) {
           await document.exitFullscreen();
         } else if (document.webkitExitFullscreen) {
@@ -943,18 +928,18 @@ function setupBtsFullscreenButton() {
     }
   });
   
-  // Update button icon based on fullscreen state
+  // update the button icon based upon fullscreen state
   const updateFullscreenIcon = () => {
     const isFullscreen = !!document.fullscreenElement;
     const svg = freshButton.querySelector('svg');
     if (svg) {
       if (isFullscreen) {
-        // Exit fullscreen icon
+        // exit the fullscreen icon
         svg.innerHTML = `
           <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>
         `;
       } else {
-        // Enter fullscreen icon
+        // enter the fullscreen icon
         svg.innerHTML = `
           <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
         `;
@@ -962,11 +947,11 @@ function setupBtsFullscreenButton() {
     }
   };
   
-  // Listen for fullscreen changes
+  // listen for fullscreen changes
   document.addEventListener('fullscreenchange', updateFullscreenIcon);
   document.addEventListener('webkitfullscreenchange', updateFullscreenIcon);
   document.addEventListener('msfullscreenchange', updateFullscreenIcon);
 }
 
-// Initialize app
+// initialize app
 showPage(currentPath);
