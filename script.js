@@ -62,10 +62,29 @@ function showPage(path) {
     navigation.style.display = '';
   }
 
-  // Clean up video end handler when leaving video page
-  if (path !== '/video' && videoEndHandler) {
-    window.removeEventListener('message', videoEndHandler);
-    videoEndHandler = null;
+  // Stop all videos when leaving video page
+  if (path !== '/video') {
+    // Stop video player
+    const videoPlayer = document.getElementById('video-player');
+    if (videoPlayer) {
+      videoPlayer.pause();
+      videoPlayer.currentTime = 0;
+      videoPlayer.src = '';
+    }
+    
+    // Stop iframe video by removing src
+    const videoIframe = document.getElementById('video-iframe');
+    if (videoIframe) {
+      videoIframe.src = '';
+      videoIframe.removeAttribute('src');
+    }
+    
+    // Clean up video end handler
+    if (videoEndHandler) {
+      window.removeEventListener('message', videoEndHandler);
+      videoEndHandler = null;
+    }
+    
     const continueButton = document.getElementById('continue-button');
     if (continueButton) {
       continueButton.style.display = 'none';
@@ -113,6 +132,9 @@ function showPage(path) {
       }
       // If previousPath is '/video', we're staying on the video page, so preserve state
       initVideoPage();
+    } else if (path === '/bts') {
+      // Setup fullscreen button for BTS page
+      setupBtsFullscreenButton();
     } else if (path === '/success') {
       // Clear navigation history when reaching success page
       // This ensures a fresh start when going back to home
@@ -315,19 +337,19 @@ const allChoices = [
   { 
     optionLabel: 'Option 1', 
     title: 'Confront', 
-    video: { type: 'iframe', src: 'https://drive.google.com/file/d/1yO3Q0zYNXULnzGqYnaz5FBU4pTREjNgn/preview' },
+    video: { type: 'iframe', src: 'https://drive.google.com/file/d/1_Nd69YGWeychNnHv88fUQ0Bj0G0x8LWw/preview' },
     isCorrect: false 
   },
   { 
     optionLabel: 'Option 2', 
     title: 'Post on ROR', 
-    video: { type: 'iframe', src: 'https://drive.google.com/file/d/1WcHgmhjt7MfcZs91rzN4fd2HiMv0lWpZ/preview' },
+    video: { type: 'iframe', src: 'https://drive.google.com/file/d/1SVFubzYXmUkw70lmQxDmzkYyd0xmDgwn/preview' },
     isCorrect: false 
   },
   { 
     optionLabel: 'Option 3', 
     title: 'Let it go', 
-    video: { type: 'iframe', src: 'https://drive.google.com/file/d/19DiUqtNbis8oZbzIx9gn-5EmbmeFVLNJ/preview' },
+    video: { type: 'iframe', src: 'https://drive.google.com/file/d/1ZwtIBMWeeo17NoRSFmul937vg6KFHnqD/preview' },
     isCorrect: true 
   },
 ];
@@ -472,7 +494,7 @@ function initVideoPage() {
     // We just reset, so force clear choice video state and show main video
     isPlayingChoiceVideo = false;
     selectedChoice = null;
-  } else {
+    } else {
     // Check if we should resume a choice video
     // Only resume if:
     // 1. Navigation history has more than just 'main-video' (we're in the middle of a flow)
@@ -527,6 +549,9 @@ function initVideoPage() {
   if (videoWrapper) {
     videoWrapper.style.display = 'flex';
   }
+  
+  // Setup fullscreen button
+  setupFullscreenButton();
   
   // Play main video
   const currentVideo = videos[currentVideoIndex];
@@ -623,6 +648,20 @@ function showChoicesWithoutHistoryUpdate(levelIndex) {
   // If no choices available, show all (shouldn't happen, but safety check)
   const choices = availableChoices.length > 0 ? availableChoices : allChoices;
   
+  // Stop current video before showing choices
+  const videoPlayer = document.getElementById('video-player');
+  const videoIframe = document.getElementById('video-iframe');
+  
+  if (videoPlayer) {
+    videoPlayer.pause();
+    videoPlayer.currentTime = 0;
+  }
+  
+  if (videoIframe) {
+    videoIframe.src = '';
+    videoIframe.removeAttribute('src');
+  }
+  
   // Hide video and buttons
   if (videoWrapper) videoWrapper.style.display = 'none';
   if (continueButton) continueButton.style.display = 'none';
@@ -651,8 +690,8 @@ function showChoicesWithoutHistoryUpdate(levelIndex) {
     button.className = 'choice-button';
     button.setAttribute('data-choice-index', index);
     button.innerHTML = `
-      <span style="font-size: 1rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: hsl(var(--muted-foreground));">${choice.optionLabel}</span>
-      <span style="font-size: 2rem; font-weight: 700; display: block; margin-top: 0.75rem; color: hsl(var(--foreground));">${choice.title}</span>
+      <span style="font-size: 0.875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.15em; color: hsl(var(--muted-foreground)); opacity: 0.8; display: block; margin-bottom: 0.5rem;">${choice.optionLabel}</span>
+      <span style="font-size: 2.5rem; font-weight: 800; display: block; color: hsl(var(--foreground)); line-height: 1.2; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);">${choice.title}</span>
     `;
     button.addEventListener('click', () => handleChoiceSelection({ ...choice, isCorrect }, levelIndex));
     choicesGrid.appendChild(button);
@@ -662,6 +701,20 @@ function showChoicesWithoutHistoryUpdate(levelIndex) {
 }
 
 function handleChoiceSelection(choice, levelIndex) {
+  // Stop current video before playing new one
+  const videoPlayer = document.getElementById('video-player');
+  const videoIframe = document.getElementById('video-iframe');
+  
+  if (videoPlayer) {
+    videoPlayer.pause();
+    videoPlayer.currentTime = 0;
+  }
+  
+  if (videoIframe) {
+    videoIframe.src = '';
+    videoIframe.removeAttribute('src');
+  }
+  
   selectedChoice = { choice, levelIndex };
   isPlayingChoiceVideo = true;
   
@@ -693,6 +746,9 @@ function playChoiceVideo(choice, levelIndex) {
   
   // Show video wrapper
   if (videoWrapper) videoWrapper.style.display = 'flex';
+  
+  // Setup fullscreen button
+  setupFullscreenButton();
   
   // Show continue button, hide back button for choice videos
   if (continueButton) continueButton.style.display = 'block';
@@ -781,6 +837,135 @@ if (notFoundLink) {
   notFoundLink.addEventListener('click', () => {
     navigate('/');
   });
+}
+
+// Fullscreen functionality
+function setupFullscreenButton() {
+  const fullscreenButton = document.getElementById('fullscreen-button');
+  const videoWrapper = document.getElementById('video-wrapper') || document.querySelector('.video-wrapper');
+  
+  if (!fullscreenButton || !videoWrapper) return;
+  
+  // Remove existing event listeners
+  const newButton = fullscreenButton.cloneNode(true);
+  fullscreenButton.parentNode?.replaceChild(newButton, fullscreenButton);
+  
+  const freshButton = document.getElementById('fullscreen-button');
+  if (!freshButton) return;
+  
+  freshButton.addEventListener('click', async () => {
+    try {
+      if (!document.fullscreenElement) {
+        // Enter fullscreen
+        if (videoWrapper.requestFullscreen) {
+          await videoWrapper.requestFullscreen();
+        } else if (videoWrapper.webkitRequestFullscreen) {
+          await videoWrapper.webkitRequestFullscreen();
+        } else if (videoWrapper.msRequestFullscreen) {
+          await videoWrapper.msRequestFullscreen();
+        }
+      } else {
+        // Exit fullscreen
+        if (document.exitFullscreen) {
+          await document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+          await document.webkitExitFullscreen();
+        } else if (document.msExitFullscreen) {
+          await document.msExitFullscreen();
+        }
+      }
+    } catch (err) {
+      console.log('Fullscreen error:', err);
+    }
+  });
+  
+  // Update button icon based on fullscreen state
+  const updateFullscreenIcon = () => {
+    const isFullscreen = !!document.fullscreenElement;
+    const svg = freshButton.querySelector('svg');
+    if (svg) {
+      if (isFullscreen) {
+        // Exit fullscreen icon
+        svg.innerHTML = `
+          <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>
+        `;
+      } else {
+        // Enter fullscreen icon
+        svg.innerHTML = `
+          <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+        `;
+      }
+    }
+  };
+  
+  // Listen for fullscreen changes
+  document.addEventListener('fullscreenchange', updateFullscreenIcon);
+  document.addEventListener('webkitfullscreenchange', updateFullscreenIcon);
+  document.addEventListener('msfullscreenchange', updateFullscreenIcon);
+}
+
+function setupBtsFullscreenButton() {
+  const fullscreenButton = document.getElementById('bts-fullscreen-button');
+  const videoWrapper = document.getElementById('bts-video-wrapper');
+  
+  if (!fullscreenButton || !videoWrapper) return;
+  
+  // Remove existing event listeners
+  const newButton = fullscreenButton.cloneNode(true);
+  fullscreenButton.parentNode?.replaceChild(newButton, fullscreenButton);
+  
+  const freshButton = document.getElementById('bts-fullscreen-button');
+  if (!freshButton) return;
+  
+  freshButton.addEventListener('click', async () => {
+    try {
+      if (!document.fullscreenElement) {
+        // Enter fullscreen
+        if (videoWrapper.requestFullscreen) {
+          await videoWrapper.requestFullscreen();
+        } else if (videoWrapper.webkitRequestFullscreen) {
+          await videoWrapper.webkitRequestFullscreen();
+        } else if (videoWrapper.msRequestFullscreen) {
+          await videoWrapper.msRequestFullscreen();
+        }
+      } else {
+        // Exit fullscreen
+        if (document.exitFullscreen) {
+          await document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+          await document.webkitExitFullscreen();
+        } else if (document.msExitFullscreen) {
+          await document.msExitFullscreen();
+        }
+      }
+    } catch (err) {
+      console.log('BTS Fullscreen error:', err);
+    }
+  });
+  
+  // Update button icon based on fullscreen state
+  const updateFullscreenIcon = () => {
+    const isFullscreen = !!document.fullscreenElement;
+    const svg = freshButton.querySelector('svg');
+    if (svg) {
+      if (isFullscreen) {
+        // Exit fullscreen icon
+        svg.innerHTML = `
+          <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>
+        `;
+      } else {
+        // Enter fullscreen icon
+        svg.innerHTML = `
+          <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+        `;
+      }
+    }
+  };
+  
+  // Listen for fullscreen changes
+  document.addEventListener('fullscreenchange', updateFullscreenIcon);
+  document.addEventListener('webkitfullscreenchange', updateFullscreenIcon);
+  document.addEventListener('msfullscreenchange', updateFullscreenIcon);
 }
 
 // Initialize app
