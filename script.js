@@ -330,7 +330,7 @@ if (doorButton) {
 // video page functionality
 let currentVideoIndex = 0;
 const videos = [
-  { type: 'iframe', src: 'https://drive.google.com/file/d/1tXRuomBFox5A2s3Lv0WzmuEhNfbrmhKu/preview' },
+  { type: 'iframe', src: 'https://drive.google.com/file/d/1jzz9RxGaODluHLoIRU-b3AQ5pmKwrJZi/preview' },
 ];
 
 // set all available choices
@@ -338,19 +338,19 @@ const allChoices = [
   { 
     optionLabel: 'Option 1', 
     title: 'Confront', 
-    video: { type: 'iframe', src: 'https://drive.google.com/file/d/1_Nd69YGWeychNnHv88fUQ0Bj0G0x8LWw/preview' },
+    video: { type: 'iframe', src: 'https://drive.google.com/file/d/1cLewkmjJWcr45zRh09BLjjOMhOhwh-hX/preview' },
     isCorrect: false 
   },
   { 
     optionLabel: 'Option 2', 
     title: 'Post on ROR', 
-    video: { type: 'iframe', src: 'https://drive.google.com/file/d/1SVFubzYXmUkw70lmQxDmzkYyd0xmDgwn/preview' },
+    video: { type: 'iframe', src: 'https://drive.google.com/file/d/1AMMhL0VfiADcFP0kDd5ZxWxSQw6x__E8/preview' },
     isCorrect: false 
   },
   { 
     optionLabel: 'Option 3', 
     title: 'Let it go', 
-    video: { type: 'iframe', src: 'https://drive.google.com/file/d/1ZwtIBMWeeo17NoRSFmul937vg6KFHnqD/preview' },
+    video: { type: 'iframe', src: 'https://drive.google.com/file/d/1ReIDh10U5CeuXdxf_pBvMgGli4S6KDL5/preview' },
     isCorrect: true 
   },
 ];
