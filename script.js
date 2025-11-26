@@ -1,7 +1,3 @@
-// React and ReactDOM are loaded from CDN
-const { useState, useEffect, useRef, createElement: h } = React;
-const { createRoot } = ReactDOM;
-
 // Simple routing system
 const validRoutes = ['/', '/video', '/warning', '/success', '/bts', '/team'];
 let currentPath = window.location.pathname || '/';
@@ -12,12 +8,144 @@ if (!validRoutes.includes(currentPath)) {
   window.history.replaceState({}, '', '/');
 }
 
-const listeners = [];
+// Page elements
+const pages = {
+  '/': document.getElementById('index-page'),
+  '/video': document.getElementById('video-page'),
+  '/warning': document.getElementById('warning-page'),
+  '/success': document.getElementById('success-page'),
+  '/bts': document.getElementById('bts-page'),
+  '/team': document.getElementById('team-page'),
+};
+
+// Navigation
+const navButtons = document.querySelectorAll('.nav-button');
+const navigation = document.getElementById('navigation');
 
 function navigate(path) {
   currentPath = path;
   window.history.pushState({}, '', path);
-  listeners.forEach(listener => listener(currentPath));
+  showPage(path);
+}
+
+function showPage(path) {
+  // Track previous path to detect navigation from non-video pages
+  const previousPath = currentPath;
+  
+  // Hide all pages
+  Object.values(pages).forEach(page => {
+    if (page) page.style.display = 'none';
+  });
+
+  // Show current page
+  const currentPage = pages[path] || pages['/'];
+  if (currentPage) {
+    currentPage.style.display = '';
+  }
+
+  // Update navigation buttons
+  navButtons.forEach(button => {
+    const buttonPath = button.getAttribute('data-path');
+    if (buttonPath === path) {
+      button.classList.remove('outline');
+      button.classList.add('default');
+    } else {
+      button.classList.remove('default');
+      button.classList.add('outline');
+    }
+  });
+
+  // Show/hide navigation based on page
+  if (path === '/' || path === '/warning' || path === '/success') {
+    navigation.style.display = 'none';
+  } else {
+    navigation.style.display = '';
+  }
+
+  // Stop all videos when leaving video page
+  if (path !== '/video') {
+    // Stop video player
+    const videoPlayer = document.getElementById('video-player');
+    if (videoPlayer) {
+      videoPlayer.pause();
+      videoPlayer.currentTime = 0;
+      videoPlayer.src = '';
+    }
+    
+    // Stop iframe video by removing src
+    const videoIframe = document.getElementById('video-iframe');
+    if (videoIframe) {
+      videoIframe.src = '';
+      videoIframe.removeAttribute('src');
+    }
+    
+    // Clean up video end handler
+    if (videoEndHandler) {
+      window.removeEventListener('message', videoEndHandler);
+      videoEndHandler = null;
+    }
+    
+    const continueButton = document.getElementById('continue-button');
+    if (continueButton) {
+      continueButton.style.display = 'none';
+    }
+  }
+  
+  // Stop all audio when leaving home page
+  const laundryAudio = document.getElementById('laundry-audio');
+  const doorAudio = document.getElementById('door-audio');
+  if (laundryAudio) {
+    laundryAudio.pause();
+    laundryAudio.currentTime = 0;
+  }
+  if (doorAudio) {
+    doorAudio.pause();
+    doorAudio.currentTime = 0;
+  }
+  
+  // Reset everything when going to home page
+  if (path === '/') {
+    resetVideoState();
+    cleanupFloatingTexts(); // Clean up any existing floating texts before initializing
+    initIndexPage();
+  } else {
+    // Clean up floating texts when leaving home page
+    cleanupFloatingTexts();
+    
+    if (path === '/video') {
+      // Always reset to main video if coming from any page other than /video itself
+      // This ensures video always starts from the beginning when navigating from any other page
+      if (previousPath !== '/video') {
+        // Coming from any other page - always reset to main video
+        resetVideoState();
+        // Explicitly clear choice video state to prevent resuming
+        isPlayingChoiceVideo = false;
+        selectedChoice = null;
+        navigationHistory.push('main-video');
+      } else if (navigationHistory.length === 0 || !navigationHistory.includes('main-video')) {
+        // Fresh start or no main-video in history - reset everything
+        resetVideoState();
+        // Explicitly clear choice video state to prevent resuming
+        isPlayingChoiceVideo = false;
+        selectedChoice = null;
+        navigationHistory.push('main-video');
+      }
+      // If previousPath is '/video', we're staying on the video page, so preserve state
+      initVideoPage();
+    } else if (path === '/bts') {
+      // Setup fullscreen button for BTS page
+      setupBtsFullscreenButton();
+    } else if (path === '/success') {
+      // Clear navigation history when reaching success page
+      // This ensures a fresh start when going back to home
+      navigationHistory = [];
+      isPlayingChoiceVideo = false;
+      selectedChoice = null;
+    }
+  }
+  
+  // Update current path
+  currentPath = path;
 }
 
 window.addEventListener('popstate', () => {
@@ -28,83 +156,43 @@ window.addEventListener('popstate', () => {
     currentPath = '/';
     window.history.replaceState({}, '', '/');
   }
-  listeners.forEach(listener => listener(currentPath));
+  showPage(currentPath);
 });
 
-function useLocation() {
-  const [path, setPath] = useState(currentPath);
+// Index page functionality
+let floatingTextInterval = null;
+let floatingTextTimeouts = []; // Track all timeouts for cleanup
+let isDoorOpening = false;
+
+function cleanupFloatingTexts() {
+  // Clear interval
+  if (floatingTextInterval) {
+    clearInterval(floatingTextInterval);
+    floatingTextInterval = null;
+  }
   
-  useEffect(() => {
-    const listener = (newPath) => setPath(newPath);
-    listeners.push(listener);
-    return () => {
-      const index = listeners.indexOf(listener);
-      if (index > -1) listeners.splice(index, 1);
-    };
-  }, []);
+  // Clear all timeouts
+  floatingTextTimeouts.forEach(timeout => clearTimeout(timeout));
+  floatingTextTimeouts = [];
   
-  return { pathname: path };
+  // Remove all existing floating texts
+  const existingTexts = document.querySelectorAll('.floating-text');
+  existingTexts.forEach(text => text.remove());
 }
 
-// Utility function for className merging
-function cn(...inputs) {
-  return inputs.filter(Boolean).join(' ');
-}
+function initIndexPage() {
+  // Clean up any existing floating texts first
+  cleanupFloatingTexts();
 
-// Simple Button component
-function Button({ className = '', variant = 'default', size = 'default', children, onClick, ...props }) {
-  const baseStyles = 'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50';
-  
-  const variantStyles = {
-    default: 'bg-primary text-primary-foreground hover:bg-primary/90',
-    outline: 'border border-input bg-background hover:bg-accent hover:text-accent-foreground',
-    secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
-  };
-  
-  const sizeStyles = {
-    default: 'h-10 px-4 py-2',
-    sm: 'h-9 rounded-md px-3',
-    lg: 'h-11 rounded-md px-8',
-  };
-  
-  const styles = cn(baseStyles, variantStyles[variant] || variantStyles.default, sizeStyles[size] || sizeStyles.default, className);
-  
-  return h('button', { className: styles, onClick, ...props }, children);
-}
-
-// Navigation component
-function Navigation() {
-  const location = useLocation();
-  const navItems = [
-    { name: 'Home', path: '/' },
-    { name: 'Video', path: '/video' },
-    { name: 'BTS', path: '/bts' },
-    { name: 'Team', path: '/team' },
-  ];
-
-  return h('nav', { className: 'nav' },
-    h('div', { className: 'nav-container' },
-      h('div', { className: 'nav-brand' },
-        h('h1', { className: 'nav-title' }, 'Laundry Guide')
-      ),
-      h('div', { className: 'nav-items' },
-        navItems.map(item =>
-          h(Button, {
-            key: item.path,
-            onClick: () => navigate(item.path),
-            variant: location.pathname === item.path ? 'default' : 'outline',
-            className: 'nav-button'
-          }, item.name)
-        )
-      )
-    )
-  );
-}
-
-// Index page
-function Index() {
-  const [isDoorOpening, setIsDoorOpening] = useState(false);
-  const [floatingTexts, setFloatingTexts] = useState([]);
+  // Play laundry audio on home page
+  const laundryAudio = document.getElementById('laundry-audio');
+  if (laundryAudio) {
+    laundryAudio.currentTime = 0;
+    laundryAudio.play().catch(err => {
+      // Handle autoplay restrictions
+      console.log('Audio autoplay prevented:', err);
+    });
+  }
 
   const messages = [
     'Where are my socks?',
@@ -114,7 +202,6 @@ function Index() {
     'I will never forgive whoever stole my laundry'
   ];
 
-  useEffect(() => {
     const createFloatingText = () => {
       const message = messages[Math.floor(Math.random() * messages.length)];
       
@@ -133,21 +220,18 @@ function Index() {
       const safeBottom = machineBottom + padding;
       
       // Estimate text width (rough calculation)
-      const textWidth = message.length * 12 + 50; // Approximate width
+    const textWidth = message.length * 12 + 50;
       const textHeight = 60;
       
       let x, y;
       let attempts = 0;
       const maxAttempts = 100;
       
-      // Try to find a position that doesn't overlap with machine
       do {
-        // Random position with margins to keep text on screen
         x = Math.random() * (window.innerWidth - textWidth - 40) + 20;
         y = Math.random() * (window.innerHeight - textHeight - 40) + 20;
         attempts++;
         
-        // Check if position overlaps with machine area
         const overlaps = (
           x + textWidth > safeLeft &&
           x < safeRight &&
@@ -158,7 +242,6 @@ function Index() {
         if (!overlaps) break;
       } while (attempts < maxAttempts);
       
-      // If we couldn't find a good position, place it in a corner
       if (attempts >= maxAttempts) {
         const corners = [
           { x: 20, y: 20 },
@@ -171,271 +254,719 @@ function Index() {
         y = corner.y;
       }
       
-      const id = Date.now() + Math.random();
-      const newText = { id, message, x, y };
+    const textElement = document.createElement('div');
+    textElement.className = 'floating-text';
+    textElement.style.left = `${x}px`;
+    textElement.style.top = `${y}px`;
+    textElement.textContent = message;
+    
+    const indexPage = document.getElementById('index-page');
+    if (indexPage) {
+      indexPage.appendChild(textElement);
       
-      setFloatingTexts(prev => [...prev, newText]);
-      
-      // Remove text after animation (0.5s fade in + 2s display + 0.5s fade out = 3s total)
-      setTimeout(() => {
-        setFloatingTexts(prev => prev.filter(text => text.id !== id));
+      // Track timeout for cleanup
+      const timeout = setTimeout(() => {
+        textElement.remove();
+        // Remove from tracking array
+        const index = floatingTextTimeouts.indexOf(timeout);
+        if (index > -1) {
+          floatingTextTimeouts.splice(index, 1);
+        }
       }, 3000);
+      floatingTextTimeouts.push(timeout);
+    }
     };
 
-    // Create initial texts
-    setTimeout(() => {
-      createFloatingText();
+  // Create initial text
+  const initialTimeout = setTimeout(() => {
       createFloatingText();
     }, 500);
+  floatingTextTimeouts.push(initialTimeout);
     
     // Create texts periodically
-    const periodicInterval = setInterval(createFloatingText, 2500);
+  floatingTextInterval = setInterval(createFloatingText, 3500);
 
-    return () => {
-      clearInterval(periodicInterval);
-    };
-  }, []);
+  // Reset door state
+  isDoorOpening = false;
+  const doorButton = document.getElementById('door-button');
+  const doorTextContainer = document.getElementById('door-text-container');
+  if (doorButton) {
+    doorButton.classList.remove('door-open');
+  }
+  if (doorTextContainer) {
+    doorTextContainer.style.display = '';
+  }
+}
 
-  const handleDoorClick = () => {
+// Door click handler
+const doorButton = document.getElementById('door-button');
+if (doorButton) {
+  doorButton.addEventListener('click', () => {
     if (!isDoorOpening) {
-      setIsDoorOpening(true);
+      isDoorOpening = true;
+      doorButton.classList.add('door-open');
+      const doorTextContainer = document.getElementById('door-text-container');
+      if (doorTextContainer) {
+        doorTextContainer.style.display = 'none';
+      }
+      
+      // Play door opening audio immediately
+      const doorAudio = document.getElementById('door-audio');
+      if (doorAudio) {
+        doorAudio.currentTime = 0;
+        doorAudio.play().catch(err => {
+          console.log('Door audio play prevented:', err);
+        });
+      }
+      
       setTimeout(() => {
         navigate('/video');
       }, 1000);
     }
-  };
-
-  return h('div', { className: 'index-page-fullscreen' },
-    h('div', { className: 'laundry-background' }),
-    floatingTexts.map(text =>
-      h('div', {
-        key: text.id,
-        className: 'floating-text',
-        style: {
-          left: `${text.x}px`,
-          top: `${text.y}px`,
-        }
-      }, text.message)
-    ),
-    h('div', { className: 'washing-machine-container-fullscreen' },
-      h('div', { className: 'washing-machine-large shake' },
-        h('div', { className: 'washing-machine-body' }),
-        h('div', { className: 'control-panel' },
-          h('div', { className: 'control-button' }),
-          h('div', { className: 'control-button' }),
-          h('div', { className: 'control-button' })
-        ),
-        h('div', { className: 'door-frame-large' },
-          h('button', {
-            onClick: handleDoorClick,
-            className: cn('door-glass-large', isDoorOpening && 'door-open'),
-          },
-            h('div', { className: 'door-border-outer' }),
-            h('div', { className: 'door-border-inner' }),
-            !isDoorOpening && h('div', { className: 'door-text-container' },
-              h('span', { className: 'door-text' }, 'Grab your laundry')
-            )
-          )
-        )
-      )
-    )
-  );
+  });
 }
 
-// Video page
-function Video() {
-  const videoRef = useRef(null);
-  const [showChoices, setShowChoices] = useState(false);
-  const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
+// Video page functionality
+let currentVideoIndex = 0;
+const videos = [
+  { type: 'iframe', src: 'https://drive.google.com/file/d/1tXRuomBFox5A2s3Lv0WzmuEhNfbrmhKu/preview' },
+];
 
-  const videos = [
-    'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
-    'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
-    'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
-  ];
+// All available choices
+const allChoices = [
+  { 
+    optionLabel: 'Option 1', 
+    title: 'Confront', 
+    video: { type: 'iframe', src: 'https://drive.google.com/file/d/1_Nd69YGWeychNnHv88fUQ0Bj0G0x8LWw/preview' },
+    isCorrect: false 
+  },
+  { 
+    optionLabel: 'Option 2', 
+    title: 'Post on ROR', 
+    video: { type: 'iframe', src: 'https://drive.google.com/file/d/1SVFubzYXmUkw70lmQxDmzkYyd0xmDgwn/preview' },
+    isCorrect: false 
+  },
+  { 
+    optionLabel: 'Option 3', 
+    title: 'Let it go', 
+    video: { type: 'iframe', src: 'https://drive.google.com/file/d/1ZwtIBMWeeo17NoRSFmul937vg6KFHnqD/preview' },
+    isCorrect: true 
+  },
+];
 
-  useEffect(() => {
-    const video = videoRef.current;
-    if (video) {
-      video.play();
-      const handleEnded = () => setShowChoices(true);
-      video.addEventListener('ended', handleEnded);
-      return () => video.removeEventListener('ended', handleEnded);
-    }
-  }, [currentVideoIndex]);
+// Choice levels - defines which choices are correct at each level
+const choiceLevels = [
+  // Level 1: Option 3 (Let it go) is correct
+  { correctIndex: 2 },
+  // Level 2: Option 3 (Let it go) is correct
+  { correctIndex: 2 },
+  // Level 3: Option 3 (Let it go) is correct
+  { correctIndex: 2 },
+];
 
-  const handleChoice = (isCorrect) => {
-    if (isCorrect) {
-      navigate('/success');
+// State tracking
+let currentChoiceLevel = 0;
+let selectedChoice = null;
+let isPlayingChoiceVideo = false;
+let selectedChoices = []; // Track which choices have been selected
+
+// Navigation history stack: tracks the sequence of pages/states
+let navigationHistory = [];
+
+// Global variable to track video end detection
+let videoEndHandler = null;
+
+// Reset all video-related state
+function resetVideoState() {
+  // Reset all state variables
+  currentChoiceLevel = 0;
+  selectedChoice = null;
+  isPlayingChoiceVideo = false;
+  navigationHistory = [];
+  currentVideoIndex = 0;
+  selectedChoices = []; // Reset selected choices
+  
+  // Clean up video end handler
+  if (videoEndHandler) {
+    window.removeEventListener('message', videoEndHandler);
+    videoEndHandler = null;
+  }
+  
+  // Reset video elements
+  const videoIframe = document.getElementById('video-iframe');
+  const videoPlayer = document.getElementById('video-player');
+  const choicesOverlay = document.getElementById('choices-overlay');
+  const choicesGrid = document.getElementById('choices-grid');
+  const videoWrapper = document.querySelector('.video-wrapper');
+  const continueButton = document.getElementById('continue-button');
+  const backButton = document.getElementById('back-button');
+  
+  if (videoIframe) {
+    videoIframe.style.display = 'none';
+    videoIframe.src = '';
+    videoIframe.removeAttribute('src');
+  }
+  if (videoPlayer) {
+    videoPlayer.style.display = 'none';
+    videoPlayer.src = '';
+    videoPlayer.pause();
+    videoPlayer.removeAttribute('src');
+    videoPlayer.load(); // Reset video element
+  }
+  if (choicesOverlay) {
+    choicesOverlay.style.display = 'none';
+  }
+  if (choicesGrid) {
+    choicesGrid.innerHTML = ''; // Clear all choice buttons
+  }
+  if (videoWrapper) {
+    videoWrapper.style.display = 'flex';
+  }
+  if (continueButton) {
+    continueButton.style.display = 'none';
+  }
+  if (backButton) {
+    backButton.style.display = 'none';
+  }
+}
+
+// Go back to previous state
+function goBack() {
+  if (navigationHistory.length <= 1) {
+    // If we're at the start, go to home
+    navigate('/');
+    return;
+  }
+  
+  // Remove current state
+  navigationHistory.pop();
+  
+  // Get previous state
+  const previousState = navigationHistory[navigationHistory.length - 1];
+  
+  if (previousState === 'main-video') {
+    // Go back to main video
+    isPlayingChoiceVideo = false;
+    selectedChoice = null;
+    // Don't re-initialize navigation history, it's already set
+    initVideoPage();
+  } else if (previousState && previousState.startsWith('choices-')) {
+    // Go back to choices - restore without adding to history again
+    const levelIndex = parseInt(previousState.split('-')[1]);
+    isPlayingChoiceVideo = false;
+    selectedChoice = null;
+    showChoicesWithoutHistoryUpdate(levelIndex);
+  } else if (previousState === 'choice-video') {
+    // Go back from choice video to the choices that led to it
+    // Need to go back one more step to get the choices state
+    if (navigationHistory.length > 1) {
+      navigationHistory.pop();
+      const choicesState = navigationHistory[navigationHistory.length - 1];
+      if (choicesState && choicesState.startsWith('choices-')) {
+        const levelIndex = parseInt(choicesState.split('-')[1]);
+        isPlayingChoiceVideo = false;
+        selectedChoice = null;
+        showChoicesWithoutHistoryUpdate(levelIndex);
+      } else {
+        navigate('/');
+      }
     } else {
-      navigate('/warning');
+      navigate('/');
+    }
+  } else {
+    // Fallback: go to home
+    navigate('/');
+  }
+}
+
+function initVideoPage() {
+  const videoPlayer = document.getElementById('video-player');
+  const videoIframe = document.getElementById('video-iframe');
+  const choicesOverlay = document.getElementById('choices-overlay');
+  const continueButton = document.getElementById('continue-button');
+  const backButton = document.getElementById('back-button');
+  
+  // First, check if we just reset (navigationHistory only has 'main-video')
+  // If so, always show main video and ignore any choice video state
+  const isJustReset = navigationHistory.length === 1 && navigationHistory[0] === 'main-video';
+  
+  if (isJustReset) {
+    // We just reset, so force clear choice video state and show main video
+    isPlayingChoiceVideo = false;
+    selectedChoice = null;
+    } else {
+    // Check if we should resume a choice video
+    // Only resume if:
+    // 1. Navigation history has more than just 'main-video' (we're in the middle of a flow)
+    // 2. The last state in history is 'choice-video' (we were watching a choice video)
+    // 3. We have valid choice video state
+    const shouldResumeChoiceVideo = 
+      navigationHistory.length > 1 && 
+      navigationHistory[navigationHistory.length - 1] === 'choice-video' &&
+      isPlayingChoiceVideo && 
+      selectedChoice &&
+      selectedChoice.choice &&
+      selectedChoice.levelIndex !== undefined;
+    
+    if (shouldResumeChoiceVideo) {
+      playChoiceVideo(selectedChoice.choice, selectedChoice.levelIndex);
+      return;
+    }
+    
+    // If we're here but not in reset state, still clear choice video state
+    // This handles edge cases where state might be inconsistent
+    isPlayingChoiceVideo = false;
+    selectedChoice = null;
+  }
+  
+  // Reset choices overlay
+  if (choicesOverlay) {
+    choicesOverlay.style.display = 'none';
+  }
+  
+  // Clean up previous video end handler
+  if (videoEndHandler) {
+    window.removeEventListener('message', videoEndHandler);
+    videoEndHandler = null;
+  }
+  
+  // Explicitly reset video elements to ensure clean state
+  if (videoIframe) {
+    videoIframe.style.display = 'none';
+    videoIframe.src = '';
+    videoIframe.removeAttribute('src');
+  }
+  if (videoPlayer) {
+    videoPlayer.style.display = 'none';
+    videoPlayer.src = '';
+    videoPlayer.pause();
+    videoPlayer.removeAttribute('src');
+    videoPlayer.load();
+  }
+  
+  // Show video wrapper
+  const videoWrapper = document.querySelector('.video-wrapper');
+  if (videoWrapper) {
+    videoWrapper.style.display = 'flex';
+  }
+  
+  // Setup fullscreen button
+  setupFullscreenButton();
+  
+  // Play main video
+  const currentVideo = videos[currentVideoIndex];
+  
+  if (currentVideo.type === 'iframe') {
+    // Show iframe, hide video player
+    if (videoIframe) {
+      videoIframe.style.display = 'block';
+      videoIframe.src = currentVideo.src;
+    }
+    if (videoPlayer) {
+      videoPlayer.style.display = 'none';
+    }
+    
+    // Show buttons
+    if (continueButton) continueButton.style.display = 'block';
+    if (backButton) backButton.style.display = 'block';
+    
+    // Setup continue button to show choices
+    if (continueButton) {
+      // Remove all existing event listeners by cloning the button
+      const newContinueButton = continueButton.cloneNode(true);
+      continueButton.parentNode?.replaceChild(newContinueButton, continueButton);
+      
+      // Get the new button reference
+      const freshContinueButton = document.getElementById('continue-button');
+      if (freshContinueButton) {
+        const handleContinueClick = () => {
+          navigationHistory.push('choices-0');
+          showChoices(0);
+        };
+        freshContinueButton.addEventListener('click', handleContinueClick);
+      }
+    }
+    
+    // Setup back button
+    if (backButton) {
+      const handleBackClick = () => {
+        goBack();
+      };
+      backButton.removeEventListener('click', handleBackClick);
+      backButton.addEventListener('click', handleBackClick);
+    }
+  } else {
+    // Show video player, hide iframe
+    if (videoPlayer) {
+      videoPlayer.style.display = 'block';
+      videoPlayer.src = currentVideo.src;
+      videoPlayer.play();
+      
+      videoPlayer.addEventListener('ended', () => {
+        if (continueButton) continueButton.style.display = 'block';
+        if (backButton) backButton.style.display = 'block';
+      }, { once: true });
+    }
+    if (videoIframe) {
+      videoIframe.style.display = 'none';
+    }
+  }
+}
+
+function showChoices(levelIndex) {
+  showChoicesWithoutHistoryUpdate(levelIndex);
+  
+  // Update navigation history only when not going back
+  const stateKey = `choices-${levelIndex}`;
+  if (navigationHistory[navigationHistory.length - 1] !== stateKey) {
+    navigationHistory.push(stateKey);
+  }
+}
+
+function showChoicesWithoutHistoryUpdate(levelIndex) {
+  const choicesOverlay = document.getElementById('choices-overlay');
+  const choicesGrid = document.getElementById('choices-grid');
+  const continueButton = document.getElementById('continue-button');
+  const backButton = document.getElementById('back-button');
+  const videoWrapper = document.querySelector('.video-wrapper');
+  
+  if (!choicesOverlay || !choicesGrid) {
+    console.error('Choices overlay or grid not found');
+    return;
+  }
+  
+  currentChoiceLevel = levelIndex;
+  
+  // Filter out already selected choices
+  const availableChoices = allChoices.filter((choice, index) => {
+    // Check if this choice has been selected before
+    return !selectedChoices.some(selected => 
+      selected.title === choice.title && selected.video.src === choice.video.src
+    );
+  });
+  
+  // If no choices available, show all (shouldn't happen, but safety check)
+  const choices = availableChoices.length > 0 ? availableChoices : allChoices;
+  
+  // Stop current video before showing choices
+  const videoPlayer = document.getElementById('video-player');
+  const videoIframe = document.getElementById('video-iframe');
+  
+  if (videoPlayer) {
+    videoPlayer.pause();
+    videoPlayer.currentTime = 0;
+  }
+  
+  if (videoIframe) {
+    videoIframe.src = '';
+    videoIframe.removeAttribute('src');
+  }
+  
+  // Hide video and buttons
+  if (videoWrapper) videoWrapper.style.display = 'none';
+  if (continueButton) continueButton.style.display = 'none';
+  if (backButton) {
+    backButton.style.display = 'none';
+  }
+  
+  // Show choices overlay
+  if (choicesOverlay) {
+    choicesOverlay.style.display = 'flex';
+  }
+  
+  // Clear and populate choices
+  choicesGrid.innerHTML = '';
+  choicesGrid.style.gridTemplateColumns = `repeat(${choices.length}, minmax(200px, 1fr))`;
+  
+  choices.forEach((choice, index) => {
+    // Find the original index in allChoices to check if it's correct
+    const originalIndex = allChoices.findIndex(c => 
+      c.title === choice.title && c.video.src === choice.video.src
+    );
+    const levelConfig = choiceLevels[levelIndex];
+    const isCorrect = levelConfig && originalIndex === levelConfig.correctIndex;
+    
+    const button = document.createElement('button');
+    button.className = 'choice-button';
+    button.setAttribute('data-choice-index', index);
+    button.innerHTML = `
+      <span style="font-size: 0.875rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.15em; color: hsl(var(--muted-foreground)); opacity: 0.8; display: block; margin-bottom: 0.5rem;">${choice.optionLabel}</span>
+      <span style="font-size: 2.5rem; font-weight: 800; display: block; color: hsl(var(--foreground)); line-height: 1.2; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);">${choice.title}</span>
+    `;
+    button.addEventListener('click', () => handleChoiceSelection({ ...choice, isCorrect }, levelIndex));
+    choicesGrid.appendChild(button);
+  });
+  
+  choicesOverlay.style.display = 'flex';
+}
+
+function handleChoiceSelection(choice, levelIndex) {
+  // Stop current video before playing new one
+  const videoPlayer = document.getElementById('video-player');
+  const videoIframe = document.getElementById('video-iframe');
+  
+  if (videoPlayer) {
+    videoPlayer.pause();
+    videoPlayer.currentTime = 0;
+  }
+  
+  if (videoIframe) {
+    videoIframe.src = '';
+    videoIframe.removeAttribute('src');
+  }
+  
+  selectedChoice = { choice, levelIndex };
+  isPlayingChoiceVideo = true;
+  
+  // Add to selected choices list (to exclude from next level)
+  selectedChoices.push({
+    title: choice.title,
+    video: choice.video
+  });
+  
+  // Update navigation history
+  navigationHistory.push('choice-video');
+  
+  // Hide choices
+  const choicesOverlay = document.getElementById('choices-overlay');
+  if (choicesOverlay) {
+    choicesOverlay.style.display = 'none';
+  }
+  
+  // Play the selected video
+  playChoiceVideo(choice, levelIndex);
+}
+
+function playChoiceVideo(choice, levelIndex) {
+  const videoIframe = document.getElementById('video-iframe');
+  const videoPlayer = document.getElementById('video-player');
+  const videoWrapper = document.querySelector('.video-wrapper');
+  const continueButton = document.getElementById('continue-button');
+  const backButton = document.getElementById('back-button');
+  
+  // Show video wrapper
+  if (videoWrapper) videoWrapper.style.display = 'flex';
+  
+  // Setup fullscreen button
+  setupFullscreenButton();
+  
+  // Show continue button, hide back button for choice videos
+  if (continueButton) continueButton.style.display = 'block';
+  if (backButton) backButton.style.display = 'none';
+  
+  // Play video
+  if (choice.video.type === 'iframe') {
+    if (videoIframe) {
+      videoIframe.style.display = 'block';
+      videoIframe.src = choice.video.src;
+    }
+    if (videoPlayer) {
+      videoPlayer.style.display = 'none';
+    }
+  } else {
+    if (videoPlayer) {
+      videoPlayer.style.display = 'block';
+      videoPlayer.src = choice.video.src;
+      videoPlayer.play();
+    }
+    if (videoIframe) {
+      videoIframe.style.display = 'none';
+    }
+  }
+  
+  // Setup continue button - remove all existing listeners first
+  if (continueButton) {
+    // Remove all existing event listeners by cloning the button
+    const newContinueButton = continueButton.cloneNode(true);
+    continueButton.parentNode?.replaceChild(newContinueButton, continueButton);
+    
+    // Get the new button reference
+    const freshContinueButton = document.getElementById('continue-button');
+    if (freshContinueButton) {
+      const handleContinueAfterChoice = () => {
+        if (choice.isCorrect) {
+          // Correct choice - go to success page
+          navigate('/success');
+        } else {
+          // Wrong choice - show next level of choices
+          const nextLevel = levelIndex + 1;
+          if (nextLevel < choiceLevels.length) {
+            showChoices(nextLevel);
+          } else {
+            // No more levels, go to success anyway
+            navigate('/success');
+          }
+        }
+      };
+      freshContinueButton.addEventListener('click', handleContinueAfterChoice);
+    }
+  }
+}
+
+// Choice buttons are now handled dynamically in showChoices function
+
+// Warning page button
+const warningBackButton = document.getElementById('warning-back-button');
+if (warningBackButton) {
+  warningBackButton.addEventListener('click', () => {
+    navigate('/video');
+  });
+}
+
+// Success page button - restart the journey
+const restartButton = document.getElementById('restart-button');
+if (restartButton) {
+  restartButton.addEventListener('click', () => {
+    // Reset everything and go to home
+    resetVideoState();
+    navigate('/');
+  });
+}
+
+// Navigation buttons
+navButtons.forEach(button => {
+  button.addEventListener('click', () => {
+    const path = button.getAttribute('data-path');
+    navigate(path);
+  });
+});
+
+// Not found page button
+const notFoundLink = document.getElementById('not-found-link');
+if (notFoundLink) {
+  notFoundLink.addEventListener('click', () => {
+    navigate('/');
+  });
+}
+
+// Fullscreen functionality
+function setupFullscreenButton() {
+  const fullscreenButton = document.getElementById('fullscreen-button');
+  const videoWrapper = document.getElementById('video-wrapper') || document.querySelector('.video-wrapper');
+  
+  if (!fullscreenButton || !videoWrapper) return;
+  
+  // Remove existing event listeners
+  const newButton = fullscreenButton.cloneNode(true);
+  fullscreenButton.parentNode?.replaceChild(newButton, fullscreenButton);
+  
+  const freshButton = document.getElementById('fullscreen-button');
+  if (!freshButton) return;
+  
+  freshButton.addEventListener('click', async () => {
+    try {
+      if (!document.fullscreenElement) {
+        // Enter fullscreen
+        if (videoWrapper.requestFullscreen) {
+          await videoWrapper.requestFullscreen();
+        } else if (videoWrapper.webkitRequestFullscreen) {
+          await videoWrapper.webkitRequestFullscreen();
+        } else if (videoWrapper.msRequestFullscreen) {
+          await videoWrapper.msRequestFullscreen();
+        }
+      } else {
+        // Exit fullscreen
+        if (document.exitFullscreen) {
+          await document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+          await document.webkitExitFullscreen();
+        } else if (document.msExitFullscreen) {
+          await document.msExitFullscreen();
+        }
+      }
+    } catch (err) {
+      console.log('Fullscreen error:', err);
+    }
+  });
+  
+  // Update button icon based on fullscreen state
+  const updateFullscreenIcon = () => {
+    const isFullscreen = !!document.fullscreenElement;
+    const svg = freshButton.querySelector('svg');
+    if (svg) {
+      if (isFullscreen) {
+        // Exit fullscreen icon
+        svg.innerHTML = `
+          <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>
+        `;
+      } else {
+        // Enter fullscreen icon
+        svg.innerHTML = `
+          <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+        `;
+      }
     }
   };
-
-  return h('div', { className: 'page-container' },
-    h(Navigation),
-    h('div', { className: 'video-content' },
-      h('div', { className: 'video-container' },
-        h('div', { className: 'video-wrapper' },
-          h('video', {
-            ref: videoRef,
-            className: 'video-player',
-            src: videos[currentVideoIndex]
-          }),
-          showChoices && h('div', { className: 'choices-overlay' },
-            h('div', { className: 'choices-grid fade-in' },
-              h(Button, {
-                onClick: () => handleChoice(false),
-                variant: 'outline',
-                className: 'choice-button choice-button-wrong'
-              }, 'Option 1'),
-              h(Button, {
-                onClick: () => handleChoice(true),
-                variant: 'outline',
-                className: 'choice-button choice-button-correct'
-              }, 'Option 2'),
-              h(Button, {
-                onClick: () => handleChoice(false),
-                variant: 'outline',
-                className: 'choice-button choice-button-wrong'
-              }, 'Option 3')
-            )
-          )
-        )
-      )
-    )
-  );
+  
+  // Listen for fullscreen changes
+  document.addEventListener('fullscreenchange', updateFullscreenIcon);
+  document.addEventListener('webkitfullscreenchange', updateFullscreenIcon);
+  document.addEventListener('msfullscreenchange', updateFullscreenIcon);
 }
 
-// Warning page
-function Warning() {
-  return h('div', { className: 'warning-page' },
-    h('div', { className: 'warning-content fade-in' },
-      h('h1', { className: 'warning-title' }, 'Do Not Do This!'),
-      h(Button, {
-        onClick: () => navigate('/video'),
-        size: 'lg',
-        variant: 'outline',
-        className: 'warning-button'
-      }, 'Back to Video')
-    )
-  );
-}
-
-// Success page
-function Success() {
-  return h('div', { className: 'success-page' },
-    h('div', { className: 'success-content fade-in' },
-      h('h1', { className: 'success-title' }, 'Let It Go'),
-      h('h2', { className: 'success-subtitle' }, 'Be a Gentleman'),
-      h(Button, {
-        onClick: () => navigate('/video'),
-        size: 'lg',
-        variant: 'outline',
-        className: 'success-button'
-      }, 'Next Video')
-    )
-  );
-}
-
-// BTS page
-function BTS() {
-  return h('div', { className: 'page-container' },
-    h(Navigation),
-    h('div', { className: 'bts-content' },
-      h('div', { className: 'bts-container' },
-        h('h2', { className: 'bts-title' }, 'Behind the scene'),
-        h('div', { className: 'video-wrapper' },
-          h('video', {
-            controls: true,
-            className: 'video-player',
-            src: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4'
-          }, 'Your browser does not support the video tag.')
-        )
-      )
-    )
-  );
-}
-
-// Team page
-function Team() {
-  const teamMembers = [
-    { name: 'Shota', role: 'Developer' },
-    { name: 'Alex', role: 'Designer' },
-    { name: 'Maria', role: 'Producer' },
-    { name: 'James', role: 'Director' },
-  ];
-
-  return h('div', { className: 'page-container' },
-    h(Navigation),
-    h('div', { className: 'team-content' },
-      h('div', { className: 'team-container' },
-        h('div', { className: 'team-header' },
-          h('h2', { className: 'team-title' }, 'Team Members')
-        ),
-        h('div', { className: 'team-grid' },
-          teamMembers.map((member, index) =>
-            h('div', { key: index, className: 'team-member fade-in', style: { animationDelay: `${index * 0.1}s` } },
-              h('div', { className: 'team-member-name' },
-                h('h3', { className: 'team-member-title' }, member.name)
-              ),
-              h('div', { className: 'team-member-avatar' },
-                h('svg', { className: 'team-member-icon', fill: 'currentColor', viewBox: '0 0 24 24' },
-                  h('path', { d: 'M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z' })
-                )
-              )
-            )
-          )
-        )
-      )
-    )
-  );
-}
-
-// NotFound page
-function NotFound() {
-  const location = useLocation();
-
-  useEffect(() => {
-    console.error('404 Error: User attempted to access non-existent route:', location.pathname);
-    // Redirect to home after a short delay
-    const timer = setTimeout(() => {
-      navigate('/');
-    }, 2000);
-    return () => clearTimeout(timer);
-  }, [location.pathname]);
-
-  return h('div', { className: 'not-found-page' },
-    h('div', { className: 'not-found-content' },
-      h('h1', { className: 'not-found-title' }, '404'),
-      h('p', { className: 'not-found-text' }, 'Oops! Page not found'),
-      h('button', { 
-        onClick: () => navigate('/'),
-        className: 'not-found-link'
-      }, 'Return to Home')
-    )
-  );
-}
-
-// Main App component
-function App() {
-  const location = useLocation();
-
-  const routes = {
-    '/': Index,
-    '/video': Video,
-    '/warning': Warning,
-    '/success': Success,
-    '/bts': BTS,
-    '/team': Team,
+function setupBtsFullscreenButton() {
+  const fullscreenButton = document.getElementById('bts-fullscreen-button');
+  const videoWrapper = document.getElementById('bts-video-wrapper');
+  
+  if (!fullscreenButton || !videoWrapper) return;
+  
+  // Remove existing event listeners
+  const newButton = fullscreenButton.cloneNode(true);
+  fullscreenButton.parentNode?.replaceChild(newButton, fullscreenButton);
+  
+  const freshButton = document.getElementById('bts-fullscreen-button');
+  if (!freshButton) return;
+  
+  freshButton.addEventListener('click', async () => {
+    try {
+      if (!document.fullscreenElement) {
+        // Enter fullscreen
+        if (videoWrapper.requestFullscreen) {
+          await videoWrapper.requestFullscreen();
+        } else if (videoWrapper.webkitRequestFullscreen) {
+          await videoWrapper.webkitRequestFullscreen();
+        } else if (videoWrapper.msRequestFullscreen) {
+          await videoWrapper.msRequestFullscreen();
+        }
+      } else {
+        // Exit fullscreen
+        if (document.exitFullscreen) {
+          await document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+          await document.webkitExitFullscreen();
+        } else if (document.msExitFullscreen) {
+          await document.msExitFullscreen();
+        }
+      }
+    } catch (err) {
+      console.log('BTS Fullscreen error:', err);
+    }
+  });
+  
+  // Update button icon based on fullscreen state
+  const updateFullscreenIcon = () => {
+    const isFullscreen = !!document.fullscreenElement;
+    const svg = freshButton.querySelector('svg');
+    if (svg) {
+      if (isFullscreen) {
+        // Exit fullscreen icon
+        svg.innerHTML = `
+          <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path>
+        `;
+      } else {
+        // Enter fullscreen icon
+        svg.innerHTML = `
+          <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+        `;
+      }
+    }
   };
-
-  const Component = routes[location.pathname] || NotFound;
-
-  return h(Component);
+  
+  // Listen for fullscreen changes
+  document.addEventListener('fullscreenchange', updateFullscreenIcon);
+  document.addEventListener('webkitfullscreenchange', updateFullscreenIcon);
+  document.addEventListener('msfullscreenchange', updateFullscreenIcon);
 }
 
-// Initialize the app
-const root = createRoot(document.getElementById('root'));
-root.render(h(App));
-
+// Initialize app
+showPage(currentPath);
